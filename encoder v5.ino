@@ -1,8 +1,9 @@
 
-
-
-# include <DualMC33926MotorShield.h>
 # include <Encoder.h>
+
+
+
+
 
 // This is a fcuntion from the encoder library, it sets up an interrupt automatically
 
@@ -12,9 +13,6 @@ Encoder knobRight(7, 8);
 
 // Use a baud rate of 9600 or else the program breaks
 
-void setup() {
-  Serial.begin(9600);
-}
 
 const int period = 10;
 long positionLeft = -999;
@@ -35,7 +33,29 @@ int time_now_now = 0;
 int difference_2 = 0;
 int counter = 0;
 
+
+
+
+void setup() {
+  Serial.begin(9600);
+  /*pinMode(4,OUTPUT);
+  pinMode(7,OUTPUT);
+  pinMode(8,OUTPUT);
+  pinMode(9,OUTPUT);
+  pinMode(10,OUTPUT);
+  pinMode(12,INPUT);
+  digitalWrite(4,HIGH);
+ */     
+}
+
+
+
 void loop() {
+
+ // if(millis() >= 1000 && millis() <= 1100){
+ //   analogWrite(9,50);
+ //   digitalWrite(7,HIGH);
+ // }
 
   // This will make it so that it outputs data and runs for the 10ms period.
 
