@@ -2,6 +2,7 @@
 
 //library declarations
 # include <Encoder.h>
+#include "Wire.h"
 
 // This is a fcuntion from the encoder library, it sets up an interrupt automatically
 Encoder knobLeft(3, 5);
@@ -64,6 +65,36 @@ int sgn(float num){
   return sign;
 }
 
+//Determine setpoint
+void rasberryData(int numberOfBytes) {
+  if(numberOfBytes > 1) {
+    int i = 0;
+    while (Wire.available()) {
+      data[1] = Wire.read();
+      i++;
+    }
+    value = int(data[1]);
+    switch(value){
+      case 1:
+        setpoint = 0;
+        //Serial.println(setpoint);
+        break;
+      case 2:
+        setpoint = 1.57;
+        //Serial.println(setpoint);
+        break;
+      case 3:
+        setpoint = 3.14;
+        //Serial.println(setpoint);
+        break;
+      case 4:
+        setpoint = 4.71;
+        //Serial.println(setpoint);
+        break;
+    } 
+  }  
+}
+
 void setup() {
   Serial.begin(9600); // Use a baud rate of 9600 or else the program breaks
   pinMode(4,OUTPUT);
@@ -107,6 +138,7 @@ void loop() {
     current_time = millis();
     }
   }
+
 
 
 }
