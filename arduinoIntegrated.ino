@@ -28,6 +28,8 @@ int time_now_now = 0;
 int difference_2 = 0;
 int counter = 0;
 long newLeft, newRight;
+byte data[32] = {0};
+byte value = 0; 
 
 
 //type and variable declerations for feedback control
@@ -119,10 +121,10 @@ void loop() {
      // Calculate integral terms
     integral += (error * elapsed_time);
      // Calculate controller output (actual position)
-    output = (Kp * error) + (Ki * integral) + (Kd * derivative); 
+    outputControl = (Kp * error) + (Ki * integral) + (Kd * derivative); 
 
     if(abs(outputControl) > out_max){
-      output = sgn(outputControl) * out_max;
+      outputControl = sgn(outputControl) * out_max;
       integral = (outputControl - Kp*error)/Ki;      
     }
     if( outputControl < 0){
@@ -138,7 +140,3 @@ void loop() {
     current_time = millis();
     }
   }
-
-
-
-}
