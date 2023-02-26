@@ -6,14 +6,18 @@ Seed Lab: Mini project
 Atempt #2
 '''
 
-import cv2
-import time
-from picamera import PiCamera
+#Code without fstrings 
 from picamera.array import PiRGBArray
-import busio
+from picamera import PiCamera
+import numpy as np
+import time
+import cv2
+import math 
+from smbus2 import SMBus
+import sys
 import board
+import busio
 import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
-from smbus import SMBus
 
 
 # CONSTANTS
@@ -23,11 +27,12 @@ ARUCO_PARAMS = cv2.aruco.DetectorParameters_create()
 CAMERA_RESOLUTION = (1296, 976)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_BOLD = cv2.FONT_HERSHEY_DUPLEX
-CENTER_X = CAMERA_RESOLUTION[0] / 2
-CENTER_Y = CAMERA_RESOLUTION[1] / 2
+CENTER_X = CAMERA_RESOLUTION[0] // 2
+CENTER_Y = CAMERA_RESOLUTION[1] // 2
 LCD_COLUMNS = 16
 LCD_ROWS = 2
-
+font = cv2.FONT_HERSHEY_SIMPLEX #font for displaying text (below)
+fontBold = cv2.FONT_HERSHEY_DUPLEX #font for displaying text (below)
 
 def calculate_corner_center(corners, index):
     """
@@ -55,19 +60,21 @@ camera.resolution = CAMERA_RESOLUTION
 raw_capture = PiRGBArray(camera, size=CAMERA_RESOLUTION)
 time.sleep(0.1)
 
-# LCD SETUP
+#LCD Setup
+lcd_columns = 16
+lcd_rows = 2
 i2c = busio.I2C(board.SCL, board.SDA)
-lcd = character_lcd.Character_LCD_RGB_I2C(i2c, LCD_COLUMNS, LCD_ROWS)
+lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
 lcd.color = [0, 127, 255]
 smile = chr(0b10111100)
-lcd.message = f" {smile}    ArUco   {smile} \n     Testing     "
+lcd.message = " " + smile + "    ArUco   " + smile + " \n     Testing     "
 time.sleep(2)
 lcd.clear()
-red_color_iter = 0
-blue_color_iter = 127
-green_color_iter = 255
+redColorIter = 0
+blueColorIter = 127
+greenColorIter = 255
 
-# I2C SETUP
+#I2C Setup
 bus = SMBus(1)
 addr = 0x8
 return_data = 0
@@ -86,7 +93,6 @@ for frame in camera.capture_continuous(raw_capture, format="rgb", use_video_port
         corners, ids, rejected = cv2.aruco.detectMarkers(gray, ARUCO_DICT, parameters=ARUCO_PARAMS)
 
         # DRAW DETECTED MARKERS
-                
         gray = cv2.aruco.drawDetectedMarkers(gray, corners, ids)
 
         # DRAW CENTER POINTS AND IDS
@@ -125,14 +131,27 @@ for frame in camera.capture_continuous(raw_capture, format="rgb", use_video_port
             try:
                 bus.write_byte(addr, quadrant)
                 return_data = bus.read_byte(addr)
+                print(f"Sent {quadrant} and received {return_data}")
             except:
-                print("Error communicating with I2C device")
+                print("I2C error")
+                
+       
+        
+        # UPDATE LCD BACKGROUND COLOR BASED ON RETURNED DATA FROM I2C
+        if return_data == 0:
+            lcd.color = [0, 127, 255]  # Blue
+        elif return_data == 1:
+            lcd.color = [255, 255, 0]  # Yellow
+        elif return_data == 2:
+            lcd.color = [255, 0, 0]  # Red
+        elif return_data == 3:
+            lcd.color = [0, 255, 0]  # Green
 
-        # DISPLAY IMAGE
-        cv2.imshow("ArUco Detection", gray)
+        # SHOW THE PROCESSED FRAME AND WAIT FOR KEY PRESS
+        cv2.imshow("Frame", gray)
         key = cv2.waitKey(1) & 0xFF
 
-        # CLEAR THE STREAM
+        # CLEAR THE STREAM IN PREPARATION FOR THE NEXT FRAME
         raw_capture.truncate(0)
 
         # BREAK LOOP IF 'q' KEY IS PRESSED
