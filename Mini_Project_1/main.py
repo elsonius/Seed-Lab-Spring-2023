@@ -2,6 +2,8 @@
 John Puryear
 2/21/23
 Seed Lab: Mini project
+
+#Attemp 1, needs to be fixed
 '''
 
 import cv2
