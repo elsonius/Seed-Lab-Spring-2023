@@ -24,9 +24,6 @@ time.sleep(0.1)
 
 # Open the calibration file
 cv_file_load = cv2.FileStorage(CALIBRATION_FILE, cv2.FILE_STORAGE_READ)
-mtx_load = cv_file_load.getNode("camera_matrix").mat()
-dist_load = cv_file_load.getNode("dist_coeff").mat()
-newcameramtx_load = cv_file_load.getNode("new_camera_matrix").mat()
 cv_file_load.release()
 
 # Numpy matrix to hold temp point data
