@@ -44,15 +44,13 @@ trans_file.release()
 print(transformation)
 
 # Constants for ArUco detection
-ARUCO_DICT = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
-# ARUCO_DICT = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
+ARUCO_DICT = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6x6_250)
 ARUCO_PARAMS = cv2.aruco.DetectorParameters_create()
 FONT = cv2.FONT_HERSHEY_SIMPLEX  # font for displaying text (below)
 
 # Set camera parameters
 camera = PiCamera()
 camera.resolution = (1317, 976)
-# camera.framerate = 30
 raw_capture = PiRGBArray(camera, size=(1296, 976))
 
 ## Settings for Camera
