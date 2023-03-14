@@ -29,17 +29,14 @@ blueColorIter = 127
 greenColorIter = 255
 
 # Camera calibration
-CALIBRATION_FILE = "camera_calibration_2.yaml"
+CALIBRATION_FILE = "TRANSFORMATION_FILE_TWO.yaml"
 calib_file = cv2.FileStorage(CALIBRATION_FILE, cv2.FILE_STORAGE_READ)
-mtx = calib_file.getNode("camera_matrix").mat()
-dist = calib_file.getNode("dist_coeff").mat()
-newcam_mtx = calib_file.getNode("new_camera_matrix").mat()
 calib_file.release()
 
 # Transformation
-TRANSFORMATION_FILE = "transformation_matrix.yaml"
+TRANSFORMATION_FILE = "TRANSFORMATION_FILE.yaml"
 trans_file = cv2.FileStorage(TRANSFORMATION_FILE, cv2.FILE_STORAGE_READ)
-transformation = trans_file.getNode("transformation_matrix").mat()
+transformation = trans_file.getNode("TRANSFORMATION_FILE_MATRIX").mat()
 trans_file.release()
 print(transformation)
 
