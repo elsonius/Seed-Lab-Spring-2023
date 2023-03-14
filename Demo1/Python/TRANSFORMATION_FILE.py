@@ -10,7 +10,7 @@ from numpy.linalg import inv
 FILENAME = "planarCalibrationImage.jpg"
 CALIBRATION_FILE = "camera_calibration_2.yaml"
 TRANSFORMATION_MATRIX_FILE = "transformation_matrix.yaml"
-ARUCO_DICT = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
+ARUCO_DICT = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6x6_250)
 ARUCO_PARAMS = cv2.aruco.DetectorParameters_create()
 FONT = cv2.FONT_HERSHEY_SIMPLEX  # font for displaying text (below)
 BOLD_FONT = cv2.FONT_HERSHEY_DUPLEX  # font for displaying text (below)
