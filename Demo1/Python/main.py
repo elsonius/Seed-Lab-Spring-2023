@@ -34,7 +34,7 @@ calib_file = cv2.FileStorage(CALIBRATION_FILE, cv2.FILE_STORAGE_READ)
 calib_file.release()
 
 # Transformation
-TRANSFORMATION_FILE = "TRANSFORMATION_FILE.yaml"
+TRANSFORMATION_FILE = "TRANSFORMATION_FILE_ONE.yaml"
 trans_file = cv2.FileStorage(TRANSFORMATION_FILE, cv2.FILE_STORAGE_READ)
 transformation = trans_file.getNode("TRANSFORMATION_FILE_MATRIX").mat()
 trans_file.release()
