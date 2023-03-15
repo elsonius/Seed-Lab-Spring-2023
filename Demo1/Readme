@@ -1,1 +1,13 @@
 
+# Demo 1
+
+The purpose for demo 1 is to create a project that uses a Raspberry pi camera to detect different positions of a marker, recognize where the marker is within its 
+polar frame, and report the correct angle in degrees on the LCD screen in referance to its center point. Next, is to implement a movement scheme with the Arduino 
+to allow our project to move. The first task for the movement is to have our project move in a straight line a desired distance and stop exactly at that distance. 
+Through the use of a controller, our project would stay in that straight line by making slight adustments as it traveled the desired distance. The last task required 
+in demo 1 is to have our project move in a 90 and 180 degree turn from a starting point, then move straight to a target 2 feet away. Again, a controller is implemented 
+to assist with under and overshoot and correct its position so that the movement to the target will be straight. 
+
+
+
+
