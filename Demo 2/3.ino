@@ -12,7 +12,7 @@
 #define CIRCLE_THRESH_DIS 0.05      // threshhold to stop circle movement
 #define CIRCLE_THRESH_ROT 2.00      // threshhold to stop circle movement
 #define CIRCLE            2.5233    // circle circumfrence
-#define SLAVE_ADDRESS   0x04
+#define SLAVE_ADDRESS     0x04
 
 // libraries
 #include <Encoder.h>
@@ -24,9 +24,9 @@
 //#define WHEEL_DISTANCE  0.29750    // distance between wheels in meters (actual value)
 //#define WHEEL_DISTANCE  0.28   // distance between wheels in meters (value used at Nolan's house)
 //#define WHEEL_DISTANCE  0.2875   //testing
-#define WHEEL_DISTANCE  0.2875
-double WHEEL_DISTANCE1 = 0.2875; 
-double WHEEL_DISTANCE2 = 0.2875; //circle
+#define WHEEL_DISTANCE  0.312
+double WHEEL_DISTANCE1 = 0.312; 
+double WHEEL_DISTANCE2 = 0.312; //circle
 
 // conversion constants
 #define RAD_IN_DEG      0.01745329
@@ -89,6 +89,9 @@ double errorPosOld_rot = 0;
 double errorPosChange_dis = 0;
 double errorPosChange_rot = 0;
 
+
+double distance_count;
+
 int state = 0;
 int finState = 0;
 byte dataRec[10] = {0};
@@ -100,10 +103,12 @@ bool control[5] = {false, false, false, false, false}; // [distance, rotation, s
 long angle = 0;
 long distance = 0;
 
-
 // search - rotates the robot at a constant rate until interrupted
 // input is in (deg/s)*100
 // Ex: input of 36000 means 360 deg/sec)
+// EXPERIMENTAL
+
+
 void search(long searchSpeed) {
   //errorSpeedSum_dis = 0;
   //errorSpeedSum_rot = 0;
@@ -127,12 +132,16 @@ void aim(long aimAng) {
   control[2] = true;
   control[3] = true;
   control[4] = false;
-  desPos_rot = (((double)aimAng) / 100);
+  desPos_rot = (((double)aimAng) / 50);
 }
 
 // drive - drives the robot a specific distance
 // input is in millimeters
 void drive (long driveDis) {
+  distance_count = distance_count + 1;  
+  if (distance_count >= 2) {
+    kill();
+  }  
   errorSpeedSum_dis = 0;
   errorSpeedSum_rot = 0;
   control[0] = true;
@@ -141,7 +150,9 @@ void drive (long driveDis) {
   control[3] = true;
   control[4] = false;
   desPos_dis = actPos_dis + (((double)driveDis) / 1000);
-  desPos_rot = actPos_rot;                                  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  desPos_rot = actPos_rot;    
+     
+  Serial.println("ASDASDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");                       //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 }
 
 
@@ -212,6 +223,7 @@ void setup() {
 
   // serial communication initialization
   Serial.begin(115200);
+
   
   //initialize i2c as slave
   Wire.begin(SLAVE_ADDRESS);
@@ -235,6 +247,10 @@ void setup() {
   // writes direction to motor
   digitalWrite(DIRECTION_R, LOW);
   digitalWrite(DIRECTION_L, LOW);
+
+  // EXPERIMENTALLLLLLLLLL
+  //analogWrite(SPEED_R,25);
+  //analogWrite(SPEED_L,25);
 
 } // end of setup
 
@@ -295,32 +311,68 @@ void loop() {
 
 // finite state machine
 //state 0 == state 1 in python
+
+
+double experimental_past_time;
+double experimental_now_time;
+
 switch(state){
   case 1:
+
     search(2000);
     break;
   case 2:
-    aim(angle+500); // input is desired angle in degress*100
-    if (abs(desPos_rot) <= 1){ finState = 1;}
-    break;
+
+    // original = aim(angle + 500)
+
+    aim(angle*0.8); // input is desired angle in degress*100
+    //if (abs(desPos_rot) <= 1){ 
+
+
+
+    finState = 1;
+
+    //break;
   case 3:
+
+Serial.println("33333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333");  
     finState = 0;
-    drive(distance - 260); //distance in mm
+    //experimental
+    drive(distance/1.95); //distance in mm
+    //experimental = drive(distance - 1650);
+    // original = state = 4;
+   
     state = 4;
+
+
     break;
+    
+    
   case 4:
+
+Serial.println("4444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444");
+
+
+
+    // original error = 0.01
     if(abs(errorPos_dis) <= 0.01){
+
       rotate();
       state = 5;
     }
     break;
   case 5:
+
+Serial.println("55555555555555555555555555555555555555555555555555555555555555555555555555555555555555");
+
+    // original error = 1.0
     if(abs(errorPos_rot) <= 1.0){
+      kill();
       circle();
       state = 0;
     }
     break;
-}
+};
  /*
 if (state[0]) {
   search(4500);
