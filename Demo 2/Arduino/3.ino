@@ -1,38 +1,24 @@
-/* Full_Control.ino
- * 
- * Purpose : The files implements the full control system for the robot. Using serial communication,
- * various position, rotation, and speed functions can be called.
- * 
- */
-
-// important parameters
-#define MAX_VOLTAGE       8.1       // maximum voltage of the input into the motor
-#define CIRCLE_RADIUS     0.4       // radius of circle robot will drive
-#define CIRCLE_TIME       3.0       // time for robot to drive circle       
-#define CIRCLE_THRESH_DIS 0.05      // threshhold to stop circle movement
-#define CIRCLE_THRESH_ROT 2.00      // threshhold to stop circle movement
-#define CIRCLE            2.5233    // circle circumfrence
+#define MAX_VOLTAGE       8.1       
+#define CIRCLE_RADIUS     0.4       
+#define CIRCLE_TIME       3.0              
+#define CIRCLE_THRESH_DIS 0.05      
+#define CIRCLE_THRESH_ROT 2.00      
+#define CIRCLE            2.5233    
 #define SLAVE_ADDRESS     0x04
 
-// libraries
 #include <Encoder.h>
 #include <Wire.h>
 
-// system constants
-#define SAMPLE_TIME 30.0     // sampling time in milliseconds
-#define WHEEL_RADIUS 0.07485   // radius of wheel in meters
-//#define WHEEL_DISTANCE  0.29750    // distance between wheels in meters (actual value)
-//#define WHEEL_DISTANCE  0.28   // distance between wheels in meters (value used at Nolan's house)
-//#define WHEEL_DISTANCE  0.2875   //testing
+#define SAMPLE_TIME 30.0     
+#define WHEEL_RADIUS 0.07485   
+
 #define WHEEL_DISTANCE  0.312
 double WHEEL_DISTANCE1 = 0.312; 
 double WHEEL_DISTANCE2 = 0.312; //circle
 
-// conversion constants
 #define RAD_IN_DEG      0.01745329
 #define METERS_IN_FEET  0.3048 
 
-// inner-loops controller gains
 double KP_DIS = 0.00;
 double KI_DIS = 25.0;
 double KP_ROT = 0.00;
@@ -46,30 +32,12 @@ double KI_ROT = 0.20;
 #define KP_ROT2         0.00
 #define KI_ROT2         0.10
 
-// outer-loops controller gains and constants
 #define KPO_DIS         2.00
 #define KDO_DIS         0.88
 #define SPEED_SAT_DIS   0.75
 #define KPO_ROT         1.50
 #define KDO_ROT         0.00
 #define SPEED_SAT_ROT   90.0
-
-// pins
-#define CHANNEL_RA      2     // encoder input pin for right motor channel A
-#define CHANNEL_LA      3     // encoder input pin for left motor channel A
-#define CHANNEL_RB      5     // encoder input pin for right motor channel B
-#define CHANNEL_LB      6     // encoder input pin for left motor channel B
-#define ENABLE          4     // enables right motor
-#define DIRECTION_R     7     // right motor direction
-#define DIRECTION_L     8     // left motor direction
-#define SPEED_R         9    // PWM pin for right motor speed
-#define SPEED_L         10    // PWM pin for left motor speed    
-
-// sets encoder variables
-Encoder rightEnc(CHANNEL_RA, CHANNEL_RB);
-Encoder leftEnc(CHANNEL_LA, CHANNEL_LB); 
-
-// global variables for control system
 double actPos_dis = 0;
 double actPos_rot = 0;
 double desPos_dis = 0;
@@ -88,27 +56,46 @@ double errorPosOld_dis = 0;
 double errorPosOld_rot = 0;
 double errorPosChange_dis = 0;
 double errorPosChange_rot = 0;
-
-
+#define CHANNEL_RA      2     
+#define CHANNEL_LA      3     
+#define CHANNEL_RB      5     
+#define CHANNEL_LB      6     
+#define ENABLE          4     
+#define DIRECTION_R     7    
+#define DIRECTION_L     8    
+#define SPEED_R         9   
+#define SPEED_L         10    
+Encoder rightEnc(CHANNEL_RA, CHANNEL_RB);
+Encoder leftEnc(CHANNEL_LA, CHANNEL_LB); 
 double distance_count;
-
 int state = 0;
 int finState = 0;
 byte dataRec[10] = {0};
 byte outVal[2] = {0};
-
-// global variabls for system mode
-bool control[5] = {false, false, false, false, false}; // [distance, rotation, speed, angular speed, circle]
-//bool state[5] = {false, false, false, false, false};
+bool control[5] = {false, false, false, false, false};
 long angle = 0;
 long distance = 0;
-
-// search - rotates the robot at a constant rate until interrupted
-// input is in (deg/s)*100
-// Ex: input of 36000 means 360 deg/sec)
 // EXPERIMENTAL
-
-
+void rotate() {
+  errorSpeedSum_dis = 0;
+  errorSpeedSum_rot = 0;
+  control[0] = true;
+  control[1] = true;
+  control[2] = true;
+  control[3] = true;
+  control[4] = false;
+  desPos_rot = actPos_rot - 90;
+}
+void aim(long aimAng) {
+  //errorSpeedSum_dis = 0;
+  //errorSpeedSum_rot = 0;
+  control[0] = true;
+  control[1] = true;
+  control[2] = true;
+  control[3] = true;
+  control[4] = false;
+  desPos_rot = (((double)aimAng) / 50);
+}
 void search(long searchSpeed) {
   //errorSpeedSum_dis = 0;
   //errorSpeedSum_rot = 0;
@@ -124,16 +111,7 @@ void search(long searchSpeed) {
 // aim - fine tunes the angle of the robot to match the marker
 // input is in deg*100
 // Ex: input of 10 means 0.1 degrees
-void aim(long aimAng) {
-  //errorSpeedSum_dis = 0;
-  //errorSpeedSum_rot = 0;
-  control[0] = true;
-  control[1] = true;
-  control[2] = true;
-  control[3] = true;
-  control[4] = false;
-  desPos_rot = (((double)aimAng) / 50);
-}
+
 
 // drive - drives the robot a specific distance
 // input is in millimeters
@@ -155,9 +133,6 @@ void drive (long driveDis) {
   Serial.println("ASDASDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");                       //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 }
 
-
-// rotate - rotates the robot a predifened angle
-// no input
 void rotate() {
   errorSpeedSum_dis = 0;
   errorSpeedSum_rot = 0;
@@ -252,12 +227,6 @@ void setup() {
   //analogWrite(SPEED_R,25);
   //analogWrite(SPEED_L,25);
 
-} // end of setup
-
-
-void loop() {
-  
-  // static variables
   static unsigned long currentTime = 0;
   static unsigned long correctTime = 0;
   static double newDeg_R = 0;
@@ -274,47 +243,13 @@ void loop() {
   // measures time for delay
   currentTime = millis();
 
-  // !!!!!!!!! simulation test area !!!!!!!!!
-//   static bool stage1_f = false;
-//   static bool stage2_f = false;
-//   static bool stage3_f = false;
-//   static bool stage4_f = true;
-//   static bool stage5_f = true;
-//   static bool stage6_f = true;
-//   if ((millis() >= 2000) && (!stage1_f)) {
-//     state[0] = true;
-//     stage1_f = true;
-//   }
-//   if ((millis() >= 6000) && (!stage2_f)) {
-//     angle = 10;
-//     state[1] = true;
-//     stage2_f = true;
-//   }
-//   if ((millis() >= 15000) && (!stage3_f)) {
-//     distance = 1000;
-//     state[2] = true;
-//     stage3_f = true;
-//   }
-//   if ((millis() >= 2000) && (!stage4_f)) {
-//     rotate();
-//     stage4_f = true;
-//   }
-//   if ((millis() >= 6000) && (!stage5_f)) {
-//     circle();
-//     stage5_f = true;
-//   }
-//   if ((millis() >= 6000) && (!stage6_f)) {
-//     kill();
-//     stage6_f = true;
-//   }
-  // !!!!!!!!! end simulation test area !!!!!
-
-// finite state machine
-//state 0 == state 1 in python
-
-
 double experimental_past_time;
 double experimental_now_time;
+
+} 
+
+
+void loop() {
 
 switch(state){
   case 1:
@@ -373,31 +308,7 @@ Serial.println("5555555555555555555555555555555555555555555555555555555555555555
     }
     break;
 };
- /*
-if (state[0]) {
-  search(4500);
-  state[0] = false;
-}
-else if (state[1]) {
-  aim(angle); // input is desired angle in degress*100
-  state[1] = false;
-}
-else if (state[2]) {
-  drive(distance - 300); //distance in mm
-  state[2] = false;
-  state[3] = true;
-}
-else if (state[3] && (abs(errorPos_dis) <= 0.01)) {
-  rotate();
-  state[3] = false;
-  state[4] = true;
-}
-else if (state[4] && (abs(errorPos_rot) <= 1.0)) {
-  circle();
-  state[4] = false;
-}
-*/
-  // takes samples of system
+
   newDeg_R = ((double)rightEnc.read() * 360) / 3200;
   newDeg_L = -((double)leftEnc.read() * 360) / 3200;
   actPos_dis = WHEEL_RADIUS * 0.5 * (newDeg_R + newDeg_L) * RAD_IN_DEG;
@@ -522,7 +433,7 @@ void receiveData(int byteCount) {
   
 }
 void sendData(){
- //shift bits to get specific bytes from outPos
+
  if (state < 2){
   int sendRot = int(actPos_rot *100);
   outVal[0] = sendRot >>8;
