@@ -1,231 +1,97 @@
-# import the necessary packages
-import picamera
-import picamera.array
-from picamera.array import PiRGBArray
-from picamera import PiCamera
 import time
-import smbus
-import board
+import math
 import busio
-import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
+import board
+import smbus
 import cv2
-import numpy as np
-import cv2.aruco as aruco
+from picamera import PiCamera
+from picamera.array import PiRGBArray
 from cv2 import aruco
-import struct
+from board import D18 as TRIG_PIN, D24 as ECHO_PIN
+import RPi.GPIO as GPIO
+import character_lcd
 
-
-camera = PiCamera()
-#Verify the pixel calculation is correct, might not be
-focalLen  = 1745.95
-# Marker Height is calculated for 700 originally, needs to be chanfged from 185
-markerHeight = 129.5
-print("Calibrating Camera...")
-# Resolution needs to be changed, we are using something different (1920,1080)
-camera.resolution = (1296, 976) 
-time.sleep(2)
-camera.exposure_mode = 'sports'
-camera.awb_mode = 'auto'
-camera.iso = 800
-# set to 100 originally
-camera.brightness = 53
-# set to 100 originally
-camera.contrast = 10
-camera.sharpness = 100
-# Shutter speed was 2000
-camera.shutter_speed = 60
-# sleep was 2
-time.sleep(0.1)
-rawCapture = PiRGBArray(camera, size=(1296, 976))
-
-
-
-runI2C = True
-#set up lcd screen
+# Set up LCD screen
 lcd_columns = 16
 lcd_rows = 2
-i2c=busio.I2C(board.SCL, board.SDA)
+i2c = busio.I2C(board.SCL, board.SDA)
 lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
 lcd.clear()
-lcd.color = [0,0,100]
+lcd.color = [0, 0, 100]
 time.sleep(1)
 bus = smbus.SMBus(1)
-
-#LCD Setup
-if runI2C:
-    lcd_columns = 16
-    lcd_rows = 2
-    i2c = busio.I2C(board.SCL, board.SDA)
-    lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
-    lcd.color = [255, 0, 0]
-    lam = chr(0b0101000110100000000101011000000000011110000101111110011110)
-    lcd.message = " " + lam + "    Demo 2   " + lam + " \n     Testing     "
-    time.sleep(2)
-    lcd.clear()
-    redColorIter = 0
-    blueColorIter = 127
-    greenColorIter = 255
-
-ardAddress = 0x8
-#Address might be wrong 0x4 or 0x8
 address = 4
-# two bytes to be stored I2C bus
 size = 2
 
-#I2C Setup
-if runI2C:
-    bus = smbus.SMBus(1)
-    addr = ardAddress
-    return_data = 0
-
-    def writeData(value):
-        bus.write_i2c_block_data(addr, 0, value)
-        return -1
-
-    def readData():
-        number = bus.read_i2c_block_data(addr, 0, 12)
-        return number
-
-for frame in camera.capture_continuous(rawCapture, format="rgb", use_video_port = True):
-   if runI2C:
-        try:
-            #Read the floats
-            receivedData = readData()
-        except:
-            print("I2C Read failed")
-        robot_X_Bytes = receivedData[:4]
-        robot_Y_Bytes = receivedData[4:8]
-        robotAngle_Bytes = receivedData[-4:]
-        aa = bytearray(robot_X_Bytes)
-        ab = bytearray(robot_Y_Bytes)
-        ac = bytearray(robotAngle_Bytes)
-        robot_X_tuple = struct.unpack('<f', aa)
-        robot_Y_tuple = struct.unpack('<f', ab)
-        robotAngle_tuple = struct.unpack('<f', ac)
-        robot_X = round(robot_X_tuple[0], 4)
-        robot_Y = round(robot_Y_tuple[0], 4)
-        robotAngle = round(robotAngle_tuple[0], 4)
-
-
-#writes I2C value
+# Write I2C value
 def writeNumber(value):
     bus.write_i2c_block_data(address, 0, value)
     return -1
 
-#reads I2C value
+# Read I2C value
 def readNumber():
     number = bus.read_i2c_block_data(address, 0, size)
     return number
 
 def createMarkers():
-   aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250) 
-   Mk1 = aruco.drawMarker(aruco_dict, 1, 100) 
-   Mk2 = aruco.drawMarker(aruco_dict, 2, 100) 
-   cv2.imwrite('marker1.jpg', Mk1) 
-   cv2.imwrite('marker2.jpg', Mk2)
-   cv2.imshow('Marker 1', Mk1) 
-   cv2.imshow('Marker 2', Mk2)
-   cv2.waitKey(0)
-   cv2.destroyAllWindows()
-   
-
-
-def writeData(address, data):
-    bus.write_i2c_block_data(ardAddress, address, list(data))
-
-def readNumber():
-    number = bus.read_i2c_block_data(ardAddress, 0, 2)
-    return number
+    # Run this program then print the markers that are saved in this program's directory
+    aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
+    Mk1 = aruco.drawMarker(aruco_dict, 1, 700)
+    Mk2 = aruco.drawMarker(aruco_dict, 2, 700)
+    cv2.imwrite('marker1.jpg', Mk1)
+    cv2.imwrite('marker2.jpg', Mk2)
+    cv2.imshow('Marker 1', Mk1)
+    cv2.imshow('Marker 2', Mk2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 def main():
-    state = 0 #state 0 is start
-    #camera = PiCamera()
-    #Verify the pixel calculation is correct, might not be
-    #focalLen  = 1745.95
-    # Marker Height is calculated for 700 originally, needs to be chanfged from 185
-    #markerHeight = 129.5
-    print("Calibrating Camera...")
-    # Resolution needs to be changed, we are using something different (1920,1080)
-    #camera.resolution = (1296, 976) 
-    #time.sleep(2)
-    #camera.exposure_mode = 'sports'
-    #camera.awb_mode = 'auto'
-    #camera.iso = 800
-    # set to 100 originally
-    #camera.brightness = 53
-    # set to 100 originally
-    #camera.contrast = 10
-    #camera.sharpness = 100
-    # Shutter speed was 2000
-    #camera.shutter_speed = 60
-    # sleep was 2
-    time.sleep(0.1) 
-    print("Searching for Marker. Press Ctrl+C to exit")
+    # Set GPIO mode to BCM
+    GPIO.setmode(GPIO.BCM)
+    # Set up GPIO pins
+    GPIO.setup(TRIG_PIN, GPIO.OUT)
+    GPIO.setup(ECHO_PIN, GPIO.IN)
+    # Set trigger pin low
+    GPIO.output(TRIG_PIN, False)
+    time.sleep(2)
+
     try:
-        while(1):
-            with picamera.array.PiRGBArray(camera) as output:
-                try:
-                    if(state == 0 or state == 1):
-                        readAbsAngleArd = readNumber()
-                        absAngle = int.from_bytes(readAbsAngleArd, byteorder = 'big')
-                except:
-                    print('i2c error')
-                #time.sleep(0.1)
-                camera.capture(output, 'rgb')
-                grayImg = cv2.cvtColor(output.array, cv2.COLOR_BGR2GRAY) #get gray image
-                aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250) #set aruco dictionary
-                parameters = aruco.DetectorParameters_create() #create parameters for detector
+        while True:
+            # Send a 10us pulse to trigger
+            GPIO.output(TRIG_PIN, True)
+            time.sleep(0.00001)
+            GPIO.output(TRIG_PIN, False)
 
+            # Wait for echo to go high and then low again
+            while GPIO.input(ECHO_PIN) == 0:
+                pulse_start = time.time()
+            while GPIO.input(ECHO_PIN) == 1:
+                pulse_end = time.time()
 
-                #run detection on gray image
-                corners, ids, rejectedIMGPoints = aruco.detectMarkers(grayImg, aruco_dict, parameters=parameters)
-                if ids is not None: #if marker detected
+            # Calculate distance in cm
+            pulse_duration = pulse_end - pulse_start
+            distance = round(pulse_duration * 17150, 2)
 
-                    print('IDs Detected: ', ids)
-                    newPic = True
-                    pixHeight = abs(corners[0][0][0][1] - corners[0][0][3][1]) #height of marker in pixels
-                    distance = focalLen * markerHeight / pixHeight #distance calculation only accurate for size 700 markers
-                    print("Distance to Marker: ", distance)
-                    dR = corners[0][0][0][0] - 960 #960 is half 1920 (midle of screen)
-                    dL = corners[0][0][1][0] - 960
-                    #print(dR, " ", dL)
-                    dMid = (dL + dR) /2 #horizontal distance from center of screen to center of marker (x direction)
-                    angle = dMid * 28/960
-                    print("Angle: ", angle)
-                    if (state == 0 or state ==1): #if start
-                        state = 2 #skip to aim
-                else:
-                    #print("No")
-                    if (state == 0 ): #if start
-                        state = 1 #go to search
-                        distance = 0
-                        angle = 0
-                output.truncate(0) #clear image for new capturet
-                
-                #Finite State Machine
-                desDistance = int(distance)
-                byteDistance = desDistance.to_bytes(2, byteorder = 'big')
-                #print(absAngle)
-                desAngle = int(angle)
-                byteAngle = desAngle.to_bytes(2, byteorder = 'big')
-                if state == 2: #aim
-                    writeData(4, byteAngle) #send desired angle to arduino
-                    writeData(6, byteDistance) #send desired distance to arduino
-                    readServoArd = readNumber()
-                    servoAngle = int.from_bytes(readServoArd, byteorder = 'big')
-                    if abs(servoAngle - absAngle) < 2: #if within 2 degrees
-                        state = 3 #go to shoot
-                elif state == 3: #shoot
-                    writeData(8, b'1') #tell arduino to shoot
-                    time.sleep(3) #wait 3 seconds
-                    writeData(8, b'0') #stop shooting
-                    state = 0 #reset to start
-                time.sleep(0.1) #wait 100ms before next iteration
+            # Calculate angle in degrees
+            angle = round(math.degrees(2 * math.asin(distance / (2 * 25))), 2)
+
+            # Print distance and angle values to LCD
+            lcd.clear()
+            lcd.message('Distance: {} cm\nAngle: {} deg'.format(distance, angle))
+            time.sleep(1)
 
     except KeyboardInterrupt:
-        camera.close()
-        print("Exiting Program")
-    finally:
-        camera.close()
-        print("Program Complete")
-main() 
+        GPIO.cleanup()
+
+if __name__ == '__main__':
+    main()
+
+state = 0  # state 0 is start
+camera = PiCamera()
+focalLen = 1745.95  # pixels (calculated)
+markerHeight = 185  # mm (measured) marker size must be 700. use create marker function
+print("Calibrating Camera...")
+camera.resolution = (1920, 1088)  # resolution of computer monitor
+time.sleep(2)
+camera.exposure
+
